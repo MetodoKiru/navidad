@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiru · Cobertura de Navidad</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --card:#ffffff; --ink:#1c1c1a; --muted:#73726b;
+    --line:#e4e2db; --accent:#394b43; --accent-soft:#eef1ee;
+    --warn:#8a6d32; --warn-soft:#f5f0e6; --radius:10px;
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  .wrap{max-width:660px;margin:0 auto;padding:30px 20px 64px}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:var(--serif);font-weight:600;font-size:26px;margin:10px 0 6px}
+  .sub{color:var(--muted);font-size:14.5px;margin:0 0 24px}
+  .ctx{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:4px 16px}
+  .ctx .row{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .ctx .row:last-child{border-bottom:none}
+  .ctx .row .k{color:var(--muted)}
+  .ctx .row .v{font-weight:600;text-align:right}
+  .days{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:62%}
+  .chip{font-size:12.5px;background:var(--accent-soft);color:var(--accent);padding:3px 9px;border-radius:5px;font-weight:600}
+  .step-label{font-family:var(--serif);font-size:17px;margin:30px 0 14px}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;cursor:pointer;transition:.12s;display:flex;gap:14px;align-items:flex-start}
+  .opt:hover{border-color:#cfccc2}
+  .opt.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  .radio{width:17px;height:17px;border-radius:50%;border:1.5px solid #c3c0b6;flex:none;margin-top:2px;position:relative}
+  .opt.sel .radio{border-color:var(--accent)}
+  .opt.sel .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--accent)}
+  .opt h3{margin:0 0 3px;font-size:15.5px;font-weight:600}
+  .opt p{margin:0;font-size:13.5px;color:var(--muted)}
+  .result{margin-top:24px;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .banner{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 8px 8px 0;padding:12px 15px;font-size:13.5px;margin-bottom:16px;color:#2f3d36}
+  .banner.warn{border-left-color:var(--warn);background:var(--warn-soft);color:#5f4d22}
+  .banner b{font-weight:700}
+  .match{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;margin-bottom:10px}
+  .match.pick{cursor:pointer}
+  .match.pick:hover{border-color:#cfccc2}
+  .match.chosen{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  .match .top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .ava{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:600;font-size:14px;background:#edebe4;color:#4a4840;font-family:var(--serif)}
+  .match .name{font-weight:600;font-size:15px}
+  .match .meta{font-size:12.5px;color:var(--muted)}
+  .cov{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .cov .d{font-size:12px;padding:3px 9px;border-radius:5px;font-weight:600}
+  .cov .yes{background:var(--accent);color:#fff}
+  .cov .no{background:#f1efe9;color:#b4b0a6;text-decoration:line-through}
+  .ghost{margin-top:6px;width:100%;background:none;border:none;color:var(--accent);font-weight:600;font-size:13.5px;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px}
+  .confirm{background:var(--accent);color:#fff;border:none;padding:14px;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;width:100%;margin-top:6px}
+  .confirm:disabled{opacity:.45;cursor:default}
+  .confirm:hover:not(:disabled){background:#30403a}
+  .done{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 22px;text-align:center}
+  .done .mark{font-family:var(--serif);font-size:22px;color:var(--accent)}
+  .done h2{font-family:var(--serif);font-weight:600;margin:8px 0;font-size:19px}
+  .done p{margin:5px 0;font-size:14px;color:var(--muted)}
+  .state{text-align:center;color:var(--muted);padding:60px 20px;font-size:15px}
+  .prev{background:var(--accent-soft);border:1px solid #dbe3dc;border-radius:8px;padding:10px 14px;font-size:13px;color:#2f3d36;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="state">Cargando…</div></div>
+
+<script>
+const API = "https://kyehzsdiapscmzaqbsdx.supabase.co/functions/v1/family";
+const app = document.getElementById('app');
+const token = new URLSearchParams(location.search).get('token');
+let DATA=null, current=null, chosen=[];
+
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const initial = n => (n||'?')[0];
+
+function covChips(covered, all){
+  return all.map(d=>`<span class="d ${covered.includes(d)?'yes':'no'}">${esc(d)}</span>`).join('');
+}
+
+async function load(){
+  if(!token){ app.innerHTML=`<div class="state">Enlace no válido. Abre el enlace personal que te enviamos por correo.</div>`; return; }
+  try{
+    const res = await fetch(`${API}?token=${encodeURIComponent(token)}`);
+    if(!res.ok){ app.innerHTML=`<div class="state">No encontramos tu página. Revisa el enlace o escríbenos.</div>`; return; }
+    DATA = await res.json();
+    render();
+  }catch(e){ app.innerHTML=`<div class="state">No se pudo cargar. Inténtalo de nuevo en un momento.</div>`; }
+}
+
+function render(){
+  const f=DATA.family, prev=DATA.selection;
+  const days=(f.preferred_days||[]);
+  app.innerHTML=`
+    <div class="eyebrow">Navidad 2026 · Método Kiru</div>
+    <h1>Hola, ${esc(f.parent_name||'familia')}</h1>
+    <p class="sub">La mentora habitual de ${esc(f.student_name||'tu hijo/a')} es ${esc(f.mentor_name||'—')}. Elige cómo quieres cubrir las sesiones de estas fechas. Nada se confirma sin vosotros.</p>
+    ${prev?`<div class="prev">Ya elegisteis: <b>${labelPref(prev.preference)}</b>${prev.chosen&&prev.chosen.length?` (${prev.chosen.map(esc).join(', ')})`:''}. Puedes cambiarlo aquí.</div>`:''}
+    <div class="ctx">
+      <div class="row"><span class="k">Alumno/a</span><span class="v">${esc(f.student_name||'—')}</span></div>
+      <div class="row"><span class="k">Mentora habitual</span><span class="v">${esc(f.mentor_name||'—')}</span></div>
+      <div class="row"><span class="k">Sesiones solicitadas</span><span class="v">${esc(f.sessions_requested??'—')}</span></div>
+      <div class="row"><span class="k">Días preferidos</span><span class="days">${days.map(d=>`<span class="chip">${esc(d)}</span>`).join('')||'<span class="v">—</span>'}</span></div>
+    </div>
+    <div class="step-label">¿Qué prefieres si ${esc(f.mentor_name||'tu mentora')} no puede algún día?</div>
+    <div class="opts" id="opts">
+      ${optCard('mentora','Solo con '+esc(f.mentor_name||'mi mentora'),'Si algún día no puede, esa sesión no se da — y no se cobra.')}
+      ${optCard('fija','Una sustituta fija','Siempre la misma persona, capacitada y de Método Kiru.')}
+      ${optCard('mix','Un mix de sustitutas','Hasta tres personas distintas de Kiru para no quedarse sin ninguna sesión.')}
+    </div>
+    <div id="result"></div>`;
+}
+function optCard(k,t,d){
+  return `<div class="opt" data-k="${k}" onclick="pick('${k}')"><div class="radio"></div><div><h3>${t}</h3><p>${d}</p></div></div>`;
+}
+function labelPref(p){return p==='mentora'?'Solo con la mentora':p==='fija'?'Una sustituta fija':'Un mix de sustitutas';}
+
+function pick(k){
+  current=k; chosen=[];
+  document.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.k===k));
+  renderResult();
+}
+
+function renderResult(){
+  const r=document.getElementById('result');
+  const o=DATA.options, days=o.preferred_days||[];
+  if(current==='mentora'){
+    r.innerHTML=`<div class="result">
+      <div class="banner"><b>Perfecto.</b> Intentaremos todas las sesiones con la mentora habitual. Los días que no pueda, esa sesión no se da ni se cobra — la cuota se ajusta de forma proporcional.</div>
+      <button class="confirm" onclick="save('mentora',[])">Confirmar esta preferencia</button></div>`;
+    return;
+  }
+  if(current==='fija'){
+    const list=o.fija||[]; const best=list[0];
+    const full=best && best.covered.length===days.length;
+    let h=`<div class="result">`;
+    if(!list.length){ h+=`<div class="banner warn">De momento no hay ninguna sustituta que encaje con tu zona y tus días. Puedes elegir "solo con tu mentora", o avisarnos y lo revisamos.</div>`; }
+    else if(full){ h+=`<div class="banner"><b>Hay sustitutas que cubren todos tus días.</b> Elige la que prefieras.</div>`; }
+    else{ h+=`<div class="banner warn">Con una sola sustituta cubrimos como máximo <b>${best.covered.length} de tus ${days.length} días</b>. Puedes elegir igual, o ampliar a un mix para no dejar ninguno fuera.</div>`; }
+    list.forEach(s=>{
+      h+=`<div class="match pick" data-id="${s.id}" onclick="toggleFija('${s.id}')">
+        <div class="top"><div class="ava">${esc(initial(s.name))}</div>
+        <div><div class="name">${esc(s.name)}</div><div class="meta">${(s.zones||[]).map(esc).join(' · ')||'—'} · Método Kiru</div></div></div>
+        <div class="cov">${covChips(s.covered,days)}</div></div>`;
+    });
+    h+=`<button class="confirm" id="cf" disabled onclick="confirmFija()">Elige una sustituta para continuar</button>`;
+    if(!full && list.length) h+=`<button class="ghost" onclick="pick('mix')">Ver un mix que cubra más días</button>`;
+    h+=`</div>`; r.innerHTML=h;
+    return;
+  }
+  if(current==='mix'){
+    const mix=o.mix||[], unc=o.mix_uncovered||[];
+    let h=`<div class="result">`;
+    if(!mix.length){ h+=`<div class="banner warn">De momento no hay sustitutas que encajen con tu zona y tus días. Puedes elegir "solo con tu mentora", o avisarnos.</div>`; }
+    else if(unc.length){ h+=`<div class="banner warn">Incluso con un mix, estas fechas quedan sin cubrir: <b>${unc.map(esc).join(', ')}</b>. Esos días no se darían ni se cobrarían.</div>`; }
+    else{ h+=`<div class="banner"><b>Con este mix cubrimos tus ${days.length} días.</b> Cada sesión la daría una persona capacitada de Kiru; nos organizamos sabiendo qué trabaja ${esc(DATA.family.student_name||'tu hijo/a')}.</div>`; }
+    mix.forEach(s=>{
+      h+=`<div class="match"><div class="top"><div class="ava">${esc(initial(s.name))}</div>
+        <div><div class="name">${esc(s.name)}</div><div class="meta">cubriría: ${s.gain.map(esc).join(', ')}</div></div></div>
+        <div class="cov">${covChips(s.gain,days)}</div></div>`;
+    });
+    if(mix.length){
+      const ids=mix.map(m=>m.id);
+      h+=`<button class="confirm" onclick='save("mix",${JSON.stringify(ids)})'>Confirmar este mix (${mix.map(m=>esc(m.name)).join(' + ')})</button>`;
+      h+=`<button class="ghost" onclick="pick('fija')">Prefiero una sola persona</button>`;
+    }
+    h+=`</div>`; r.innerHTML=h;
+    return;
+  }
+}
+
+function toggleFija(id){
+  chosen=[id];
+  document.querySelectorAll('#result .match.pick').forEach(m=>m.classList.toggle('chosen',m.dataset.id===id));
+  const b=document.getElementById('cf'); if(b){ b.disabled=false; b.textContent='Confirmar esta sustituta'; }
+}
+function confirmFija(){ if(chosen.length) save('fija',chosen); }
+
+async function save(pref,ids){
+  const btns=document.querySelectorAll('.confirm'); btns.forEach(b=>{b.disabled=true;});
+  try{
+    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,preference:pref,chosen:ids})});
+    const j=await res.json();
+    if(!res.ok||j.error){ alert('No se pudo guardar: '+(j.error||res.status)); btns.forEach(b=>b.disabled=false); return; }
+    const names = (DATA.options.fija||[]).concat(DATA.options.mix||[]).filter(s=>ids.includes(s.id)).map(s=>s.name);
+    const label = pref==='mentora'?'Solo con la mentora, sin sustituta': pref==='fija'?('Sustituta fija: '+names.join(', ')):('Mix: '+(DATA.options.mix||[]).map(m=>m.name).join(' + '));
+    app.innerHTML=`<div style="padding-top:20px"><div class="done"><div class="mark">✓</div><h2>Listo</h2><p>${esc(label)}</p><p>Lo dejamos reservado y te escribimos para cerrar las horas concretas. Nada se cobra hasta confirmarlo contigo.</p></div></div>`;
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){ alert('No se pudo guardar. Inténtalo de nuevo.'); btns.forEach(b=>b.disabled=false); }
+}
+
+load();
+</script>
+</body>
+</html>

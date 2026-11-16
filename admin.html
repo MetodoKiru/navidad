@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiru · Panel de Navidad</title>
+<style>
+  :root{--bg:#f7f6f3;--card:#fff;--ink:#1c1c1a;--muted:#73726b;--line:#e4e2db;--accent:#394b43;--accent-soft:#eef1ee;--warn:#8a6d32;--warn-soft:#f5f0e6;
+    --serif:Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-family:var(--serif);font-size:24px;margin:4px 0}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+  h2{font-family:var(--serif);font-size:18px;margin:34px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .state{color:var(--muted);padding:50px 0;text-align:center}
+  .gate{max-width:360px;margin:60px auto;text-align:center}
+  .gate input{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin:10px 0}
+  .gate button{width:100%;padding:11px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
+  .fhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .fname{font-weight:700;font-size:15.5px}
+  .fmeta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .tag{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .tag.ok{background:var(--accent-soft);color:var(--accent)}
+  .tag.pend{background:#f1efe9;color:var(--muted)}
+  .tag.warn{background:var(--warn-soft);color:var(--warn)}
+  .sub{font-size:13px;margin-top:10px}
+  .sub .lab{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
+  .chip{font-size:12px;padding:2px 8px;border-radius:5px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .chip.mut{background:#f1efe9;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  .link{font-size:12px;color:var(--accent);word-break:break-all}
+  .copy{font-size:11px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 7px;cursor:pointer;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="state">Cargando…</div></div>
+<script>
+const BASE="https://kyehzsdiapscmzaqbsdx.supabase.co/functions/v1/admin";
+const app=document.getElementById('app');
+let key=new URLSearchParams(location.search).get('key')||sessionStorage.getItem('kiru_admin')||'';
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function gate(msg){
+  app.innerHTML=`<div class="gate"><div class="eyebrow">Método Kiru</div><h1>Panel de Navidad</h1>
+    <p style="color:var(--muted);font-size:13px">${msg||'Introduce la clave de administración.'}</p>
+    <input id="k" type="password" placeholder="Clave de admin" />
+    <button onclick="(function(){key=document.getElementById('k').value.trim();sessionStorage.setItem('kiru_admin',key);load();})()">Entrar</button></div>`;
+}
+
+async function load(){
+  if(!key){ gate(); return; }
+  app.innerHTML=`<div class="state">Cargando…</div>`;
+  try{
+    const res=await fetch(`${BASE}?key=${encodeURIComponent(key)}`);
+    if(res.status===401){ sessionStorage.removeItem('kiru_admin'); gate('Clave incorrecta. Inténtalo de nuevo.'); return; }
+    if(!res.ok){ app.innerHTML=`<div class="state">Error al cargar (${res.status}).</div>`; return; }
+    render(await res.json());
+  }catch(e){ app.innerHTML=`<div class="state">No se pudo cargar.</div>`; }
+}
+
+function prefLabel(p){return p==='mentora'?'Solo mentora':p==='fija'?'Sustituta fija':p==='mix'?'Mix':'—';}
+
+function render(d){
+  const origin=location.origin;
+  let h=`<div class="eyebrow">Método Kiru · ${esc(d.period)}</div><h1>Panel de Navidad</h1>`;
+  // Familias
+  h+=`<h2>Familias (${d.families.length})</h2>`;
+  if(!d.families.length) h+=`<div class="state">Aún no hay respuestas de familias.</div>`;
+  d.families.forEach(f=>{
+    const sel=f.selection, m=f.match;
+    let tag = sel ? `<span class="tag ok">Elegido: ${esc(prefLabel(sel.preference))}${sel.chosen&&sel.chosen.length?' · '+sel.chosen.map(esc).join(', '):''}</span>`
+                  : `<span class="tag pend">Pendiente de elegir</span>`;
+    const link=`${origin}/?token=${encodeURIComponent(f.access_token)}`;
+    h+=`<div class="card">
+      <div class="fhead">
+        <div><div class="fname">${esc(f.student_name||'—')} <span style="color:var(--muted);font-weight:400">· ${esc(f.parent_name||'')}</span></div>
+          <div class="fmeta">Mentora: ${esc(f.mentor_name||'—')} · Zona: ${esc(f.home_zone||'—')} · ${esc(f.sessions_requested??'—')} sesiones</div></div>
+        ${tag}
+      </div>
+      <div class="sub"><div class="lab">Días preferidos</div><div class="chips">${(f.preferred_days||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')||'—'}</div></div>
+      <div class="sub"><div class="lab">Sustitutas viables (una sola)</div><div class="chips">${(m.fija||[]).map(s=>`<span class="chip">${esc(s.name)} · ${s.covered.length}d</span>`).join('')||'<span class="chip mut">ninguna</span>'}</div></div>
+      <div class="sub"><div class="lab">Mix sugerido</div><div class="chips">${(m.mix||[]).map(s=>`<span class="chip">${esc(s.name)} (${s.gain.map(esc).join(', ')})</span>`).join('')||'<span class="chip mut">—</span>'}${(m.uncovered||[]).length?` <span class="chip mut">sin cubrir: ${m.uncovered.map(esc).join(', ')}</span>`:''}</div></div>
+      <div class="sub"><div class="lab">Enlace personal</div><span class="link">${esc(link)}</span><button class="copy" onclick="navigator.clipboard.writeText('${link}')">copiar</button></div>
+    </div>`;
+  });
+  // Sustitutas
+  h+=`<h2>Sustitutas (${d.substitutes.length})</h2>`;
+  h+=`<table><tr><th>Nombre</th><th>Zonas</th><th>Días disp.</th><th>Máx. sesiones</th><th>Desplazamiento</th><th>Contacto</th></tr>`;
+  d.substitutes.forEach(s=>{
+    h+=`<tr><td><b>${esc(s.name)}</b></td><td>${(s.zones||[]).map(esc).join(', ')||'—'}</td><td>${s.days}</td><td>${esc(s.max_sessions??'—')}</td><td>${esc(s.can_travel||'—')}</td><td>${esc(s.email||'')}${s.phone?'<br>'+esc(s.phone):''}</td></tr>`;
+  });
+  h+=`</table>`;
+  app.innerHTML=`<div>${h}</div>`;
+}
+load();
+</script>
+</body>
+</html>
